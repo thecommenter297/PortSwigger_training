@@ -200,10 +200,10 @@ SELECT name, price FROM products ORDER BY 2
 ### Bước 2: Tìm các cột có kiểu dữ liệu chuỗi (Finding columns with a useful data type)
 
 <details>
-    
----
-    
+        
 <summary><b>🤔 Tại sao phải tìm cột kiểu CHUỖI mà không phải kiểu SỐ?</b></summary>
+
+---
 
 Việc tìm cột kiểu chuỗi (String) là bước "tìm đường" để đổ dữ liệu ra màn hình vì:
 
