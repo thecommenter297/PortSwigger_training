@@ -207,7 +207,7 @@ SELECT name, price FROM products ORDER BY 2
 
 Việc tìm cột kiểu chuỗi (String) là bước "tìm đường" để đổ dữ liệu ra màn hình vì:
 
-1. **Khớp khuôn mẫu:** `UNION` yêu cầu cột của bạn phải cùng kiểu với cột gốc. Vì Username/Password là **Chuỗi**, nên bạn phải tìm cột gốc nào cũng là **Chuỗi** thì mới "nhét" dữ liệu vào được. Nếu bạn nhét chữ vào cột Số, Database sẽ báo lỗi.
+1. **Khớp khuôn mẫu:** `UNION` yêu cầu cột của bạn phải cùng kiểu với cột gốc. Vì Username/Password là **Chuỗi**, nên bạn phải tìm cột gốc nào cũng là **Chuỗi** thì mới chèn dữ liệu vào được. Nếu bạn chèn chữ vào cột Số, Database sẽ báo lỗi.
 2. **Mục tiêu là văn bản:** Hầu hết bí mật chúng ta muốn đánh cắp (mật khẩu, cấu hình...) đều ở dạng văn bản.
 3. **Hiển thị dễ dàng:** Các vị trí hiển thị chuỗi trên trang web (như tiêu đề sản phẩm) thường cho phép hiển thị nội dung dài và phức tạp, giúp bạn dễ dàng đọc được kết quả trả về hơn là các vị trí hiển thị số (như giá tiền).
 
