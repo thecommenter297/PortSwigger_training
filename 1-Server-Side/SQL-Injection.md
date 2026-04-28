@@ -303,10 +303,7 @@ Bạn gửi Payload:
 
 
 
-> ✅ **Kết quả:** Database chấp nhận! Trên giao diện web, ---
-> 
-> 
-> tại vị trí thường hiện tên sản phẩm, bạn sẽ thấy chữ **abc** xuất hiện. Đây chính là "mỏ vàng" để bạn khai thác dữ liệu ở các bước sau.
+> ✅ **Kết quả:** Database chấp nhận! Trên giao diện web, tại vị trí thường hiện tên sản phẩm, bạn sẽ thấy chữ **abc** xuất hiện. Đây chính là "mỏ vàng" để bạn khai thác dữ liệu ở các bước sau.
 
 ---
 
