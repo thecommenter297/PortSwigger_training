@@ -198,6 +198,35 @@ SELECT name, price FROM products ORDER BY 2
 ---
 
 ### Bước 2: Tìm các cột có kiểu dữ liệu chuỗi (Finding columns with a useful data type)
+
+<details>
+    
+---
+    
+<summary><b>🤔 Tại sao phải tìm cột kiểu CHUỖI mà không phải kiểu SỐ?</b></summary>
+
+Việc tìm cột kiểu chuỗi (String) là bước "tìm đường" để đổ dữ liệu ra màn hình vì:
+
+1. **Khớp khuôn mẫu:** `UNION` yêu cầu cột của bạn phải cùng kiểu với cột gốc. Vì Username/Password là **Chuỗi**, nên bạn phải tìm cột gốc nào cũng là **Chuỗi** thì mới "nhét" dữ liệu vào được. Nếu bạn nhét chữ vào cột Số, Database sẽ báo lỗi.
+2. **Mục tiêu là văn bản:** Hầu hết bí mật chúng ta muốn đánh cắp (mật khẩu, cấu hình...) đều ở dạng văn bản.
+3. **Hiển thị dễ dàng:** Các vị trí hiển thị chuỗi trên trang web (như tiêu đề sản phẩm) thường cho phép hiển thị nội dung dài và phức tạp, giúp bạn dễ dàng đọc được kết quả trả về hơn là các vị trí hiển thị số (như giá tiền).
+
+*Nếu một bảng chỉ toàn cột kiểu Số, hacker sẽ phải dùng kỹ thuật **Ép kiểu (Casting)** để biến Chuỗi thành Số hoặc ngược lại, nhưng kỹ thuật này phức tạp hơn nhiều.*
+    
+---
+    
+    
+> 💡 **Lời khuyên: Đừng quá lo lắng về việc ép kiểu (Casting)!**
+> 
+> Nếu bạn đang lo sợ gặp phải trường hợp "Xui xẻo" là tất cả các cột đều là kiểu Số (không có cột Chuỗi nào để hiện dữ liệu), thì hãy yên tâm vì:
+> 1. **Lab PortSwigger rất "công bằng":** Nếu bài Lab yêu cầu bạn dùng kỹ thuật UNION-based, họ luôn để sẵn ít nhất một cột kiểu Chuỗi để bạn thực hành. 
+> 2. **Ép kiểu không phải là giải pháp tối ưu:** Trong thực tế, việc ép một mật khẩu (chuỗi) sang kiểu số để hiển thị ở cột "Giá tiền" thường sẽ gây lỗi hệ thống chứ không hiện được mật khẩu đó ra.
+> 3. **Vũ khí bí mật còn ở phía sau:** Nếu gặp một bảng "toàn số" và không thể dùng UNION, các chuyên gia sẽ chuyển sang dùng **Blind SQL Injection** (sẽ học ở phần sau). Đây là kỹ thuật "thượng thừa" giúp lấy dữ liệu mà không cần quan tâm đến kiểu dữ liệu của cột hay việc nó có hiển thị ra màn hình hay không.
+> 
+> **Tóm lại:** Lúc này bạn chỉ cần tập trung nắm vững cách dò tìm cột Chuỗi. Nếu tìm thấy, bạn đã nắm chắc chiến thắng trong tay!
+
+</details>
+
 Sau khi biết truy vấn có 3 cột, chúng ta cần xác định cột nào trong số đó có kiểu dữ liệu dạng văn bản (string, text, varchar...) để có thể hiển thị dữ liệu chúng ta muốn trích xuất.
 
 *   **Quy trình:**
