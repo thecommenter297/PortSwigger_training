@@ -156,6 +156,33 @@ Mệnh đề `ORDER BY` có thể nhận một con số để chỉ định cộ
     https://insecure-website.com/products?category=Gifts' ORDER BY 4--  (Thất bại)
     ```
 
+<details>
+<summary><b>💡 Tại sao lại dùng số thay vì tên cột? (Click để xem giải thích)</b></summary>
+
+---
+    
+Trong SQL, có một tính năng gọi là **Ordinal Positions** (Vị trí thứ tự). Bình thường khi học, bạn dùng:
+```sql
+SELECT name, price FROM products ORDER BY price
+```
+
+Nhưng SQL cũng cho phép viết:
+```sql
+SELECT name, price FROM products ORDER BY 2
+```
+
+(Vì `price` đứng thứ 2 trong danh sách chọn).
+
+**Tại sao Hacker "nghiện" dùng số?**
+1. **Vì chúng ta là người lạ:** Khi tấn công một trang web, bạn **không biết** lập trình viên đặt tên cột là gì (`price`, `gia_sp`, hay `cost`...). Nếu bạn đoán mò tên cột, Database sẽ báo lỗi ngay cả khi trang web có lỗ hổng. Con số thì luôn chính xác: số 1 luôn là cột đầu tiên.
+2. **Dùng để "thăm dò" (Fingerprinting):** Đây là cách nhanh nhất để biết câu lệnh ẩn của Server có bao nhiêu cột. Nếu `ORDER BY 3` chạy tốt mà `ORDER BY 4` báo lỗi, bạn biết chắc chắn câu lệnh gốc có đúng 3 cột.
+
+*Lưu ý: Trong lập trình thực tế, dùng số là **bad practice** (thói quen xấu) vì nếu cấu trúc bảng thay đổi, code sẽ chạy sai. Nhưng trong SQL Injection, nó là "chìa khóa vàng" để dò đường.*
+    
+---
+    
+</details>
+
 #### Phương pháp B: Sử dụng `UNION SELECT NULL`
 Đây là phương pháp trực tiếp hơn. Chúng ta thử `UNION` với các số lượng `NULL` khác nhau cho đến khi không còn lỗi.
 
