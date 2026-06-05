@@ -17,7 +17,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ================ Đoạn mã copy từ trang curlconverter ===============
 
-# -> COPY vào đoạn này
+# -> PASTE đoạn vừa COPY vào đây
 
 # ====================================================================
 
