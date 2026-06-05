@@ -66,7 +66,7 @@ https://insecure-website.com/products?category=Gifts'+OR+1=1--
 2.  **`OR 1=1`:** Đây là một mệnh đề logic **luôn luôn đúng**. Khi kết hợp với mệnh đề `OR`, nó sẽ khiến toàn bộ điều kiện `WHERE` trở thành đúng với **mọi hàng** trong bảng `products`, bất kể `category` là gì.
 3.  **`-- ` (Comment):** Đây là bước quan trọng nhất. Dấu `-- ` (và một khoảng trắng theo sau) báo cho Database rằng tất cả những gì đứng sau nó chỉ là chú thích và cần được bỏ qua. Điều này giúp vô hiệu hóa hoàn toàn phần `AND released = 1;` mà lập trình viên đã viết.
 
-> 💡 Lưu ý: Bắt buộc phải có khoảng trắng theo sau dấu `--`, nếu không thì các phần sau sẽ không được coi là Comment.
+> 💡 **Lưu ý**: Bắt buộc phải có khoảng trắng theo sau dấu `--`, nếu không thì các phần sau sẽ không được coi là Comment.
 
 #### E. Câu lệnh SQL sau khi bị tấn công
 Khi payload được thực thi, câu lệnh SQL cuối cùng mà Database nhận được sẽ là:
