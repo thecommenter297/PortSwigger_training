@@ -13,6 +13,7 @@
    
 <details>
    <summary>Solve</summary>
+
 ---
 
 ```python
