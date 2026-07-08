@@ -575,7 +575,7 @@
           "tbl": "users",  # Tương ứng cờ -T (-T users)
           "dumpTable": True,  # Tương ứng cờ --dump khi đi kèm bảng cụ thể
   
-          # "disableLogging": True,  # Tương ứng cờ --no-logging
+          # "noLogging": True,  # Tương ứng cờ --no-logging
           "outputDir": "%TEMP%\\sqlmap_temp",
       }
   
